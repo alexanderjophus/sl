@@ -1,0 +1,8 @@
+[package]
+name = "sl"
+version = "0.1.0"
+authors = ["Alexander J Trelore <alextrelore@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+termion = "*"
