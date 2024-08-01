@@ -7,7 +7,7 @@ repository = "https://github.com/alexanderjophus/sl"
 description = "A Rust implementation of the classic Unix 'sl' command."
 
 [dependencies]
-termion = "*"
+crossterm = "0.27"
 
 # The profile that 'cargo dist' will build with
 [profile.dist]

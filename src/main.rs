@@ -1,97 +1,97 @@
-use std::io::{stdout, Write};
+use std::io::stdout;
 use std::{thread, time};
-use termion::{clear, color, cursor, screen::IntoAlternateScreen, terminal_size};
 
-const TRAIN_11: &str = "      ====        ________                ___________ ";
-const TRAIN_12: &str = "  _D _|  |_______/        \\__I_I_____===__|_________| ";
-const TRAIN_13: &str = "   |(_)---  |   H\\________/ |   |        =|___ ___|   ";
-const TRAIN_14: &str = "   /     |  |   H  |  |     |   |         ||_| |_||   ";
-const TRAIN_15: &str = "  |      |  |   H  |__--------------------| [___] |   ";
-const TRAIN_16: &str = "  | ________|___H__/__|_____/[][]~\\_______|       |   ";
-const TRAIN_17: &str = "  |/ |   |-----------I_____I [][] []  D   |=======|__ ";
+use crossterm::terminal::{DisableLineWrap, EnableLineWrap};
+use crossterm::{
+    cursor::{Hide, MoveTo, Show},
+    execute,
+    style::Print,
+    terminal::{size, Clear, ClearType},
+};
 
-const WHEEL_11: &str = "__/ =| o |=-~~\\  /~~\\  /~~\\  /~~\\ ____Y___________|__ ";
-const WHEEL_12: &str = " |/-=|___|=    ||    ||    ||    |_____/~\\___/        ";
-const WHEEL_13: &str = "  \\_/      \\O=====O=====O=====O_/      \\_/            ";
-const WHEEL_21: &str = "__/ =| o |=-~~\\  /~~\\  /~~\\  /~~\\ ____Y___________|__ ";
-const WHEEL_22: &str = " |/-=|___|=O=====O=====O=====O   |_____/~\\___/        ";
-const WHEEL_23: &str = "  \\_/      \\__/  \\__/  \\__/  \\__/      \\_/            ";
-const WHEEL_31: &str = "__/ =| o |=-O=====O=====O=====O \\ ____Y___________|__ ";
-const WHEEL_32: &str = " |/-=|___|=    ||    ||    ||    |_____/~\\___/        ";
-const WHEEL_33: &str = "  \\_/      \\__/  \\__/  \\__/  \\__/      \\_/            ";
-const WHEEL_41: &str = "__/ =| o |=-~O=====O=====O=====O\\ ____Y___________|__ ";
-const WHEEL_42: &str = " |/-=|___|=    ||    ||    ||    |_____/~\\___/        ";
-const WHEEL_43: &str = "  \\_/      \\__/  \\__/  \\__/  \\__/      \\_/            ";
-const WHEEL_51: &str = "__/ =| o |=-~~\\  /~~\\  /~~\\  /~~\\ ____Y___________|__ ";
-const WHEEL_52: &str = " |/-=|___|=   O=====O=====O=====O|_____/~\\___/        ";
-const WHEEL_53: &str = "  \\_/      \\__/  \\__/  \\__/  \\__/      \\_/            ";
-const WHEEL_61: &str = "__/ =| o |=-~~\\  /~~\\  /~~\\  /~~\\ ____Y___________|__ ";
-const WHEEL_62: &str = " |/-=|___|=    ||    ||    ||    |_____/~\\___/        ";
-const WHEEL_63: &str = "  \\_/      \\_O=====O=====O=====O/      \\_/            ";
+const LOCO_10: &str = "      ====        ________                ___________ ";
+const LOCO_11: &str = "  _D _|  |_______/        \\__I_I_____===__|_________| ";
+const LOCO_12: &str = "   |(_)---  |   H\\________/ |   |        =|___ ___|   ";
+const LOCO_13: &str = "   /     |  |   H  |  |     |   |         ||_| |_||   ";
+const LOCO_14: &str = "  |      |  |   H  |__--------------------| [___] |   ";
+const LOCO_15: &str = "  | ________|___H__/__|_____/[][]~\\_______|       |   ";
+const LOCO_16: &str = "  |/ |   |-----------I_____I [][] []  D   |=======|__ ";
 
+const LOCO_COLLECTION: [&str; 7] = [
+    LOCO_10, LOCO_11, LOCO_12, LOCO_13, LOCO_14, LOCO_15, LOCO_16,
+];
+
+const WHEEL_10: &str = "__/ =| o |=-~~\\  /~~\\  /~~\\  /~~\\ ____Y___________|__ ";
+const WHEEL_11: &str = " |/-=|___|=    ||    ||    ||    |_____/~\\___/        ";
+const WHEEL_12: &str = "  \\_/      \\O=====O=====O=====O_/      \\_/            ";
+
+const WHEEL_20: &str = "__/ =| o |=-~~\\  /~~\\  /~~\\  /~~\\ ____Y___________|__ ";
+const WHEEL_21: &str = " |/-=|___|=O=====O=====O=====O   |_____/~\\___/        ";
+const WHEEL_22: &str = "  \\_/      \\__/  \\__/  \\__/  \\__/      \\_/            ";
+
+const WHEEL_30: &str = "__/ =| o |=-O=====O=====O=====O \\ ____Y___________|__ ";
+const WHEEL_31: &str = " |/-=|___|=    ||    ||    ||    |_____/~\\___/        ";
+const WHEEL_32: &str = "  \\_/      \\__/  \\__/  \\__/  \\__/      \\_/            ";
+
+const WHEEL_40: &str = "__/ =| o |=-~O=====O=====O=====O\\ ____Y___________|__ ";
+const WHEEL_41: &str = " |/-=|___|=    ||    ||    ||    |_____/~\\___/        ";
+const WHEEL_42: &str = "  \\_/      \\__/  \\__/  \\__/  \\__/      \\_/            ";
+
+const WHEEL_50: &str = "__/ =| o |=-~~\\  /~~\\  /~~\\  /~~\\ ____Y___________|__ ";
+const WHEEL_51: &str = " |/-=|___|=   O=====O=====O=====O|_____/~\\___/        ";
+const WHEEL_52: &str = "  \\_/      \\__/  \\__/  \\__/  \\__/      \\_/            ";
+
+const WHEEL_60: &str = "__/ =| o |=-~~\\  /~~\\  /~~\\  /~~\\ ____Y___________|__ ";
+const WHEEL_61: &str = " |/-=|___|=    ||    ||    ||    |_____/~\\___/        ";
+const WHEEL_62: &str = "  \\_/      \\_O=====O=====O=====O/      \\_/            ";
+
+const WHEELS_10: [&str; 6] = [WHEEL_10, WHEEL_20, WHEEL_30, WHEEL_40, WHEEL_50, WHEEL_60];
 const WHEELS_11: [&str; 6] = [WHEEL_11, WHEEL_21, WHEEL_31, WHEEL_41, WHEEL_51, WHEEL_61];
 const WHEELS_12: [&str; 6] = [WHEEL_12, WHEEL_22, WHEEL_32, WHEEL_42, WHEEL_52, WHEEL_62];
-const WHEELS_13: [&str; 6] = [WHEEL_13, WHEEL_23, WHEEL_33, WHEEL_43, WHEEL_53, WHEEL_63];
 
-const COAL01: &str = "                              ";
-const COAL02: &str = "                              ";
-const COAL03: &str = "    _________________         ";
-const COAL04: &str = "   _|                \\_____A ";
-const COAL05: &str = " =|                        |  ";
-const COAL06: &str = " -|                        |  ";
-const COAL07: &str = "__|________________________|_ ";
-const COAL08: &str = "|__________________________|_ ";
-const COAL09: &str = "   |_D__D__D_|  |_D__D__D_|   ";
-const COAL10: &str = "    \\_/   \\_/    \\_/   \\_/";
+const WHEEL_COLLECTION: [[&str; 6]; 3] = [WHEELS_10, WHEELS_11, WHEELS_12];
 
-fn main() {
-    // TODO Add flags
-    // -n number of carriages
-    // -t type of locomotive
-    let mut screen = stdout()
-        .into_alternate_screen()
-        .expect("Failed to open alternate screen");
-    let mut state = 0 as u8;
-    let (width, _) = terminal_size().unwrap();
-    for x in 0..=width as u16 {
-        // TODO add steam
-        println!("{}{}", clear::All, color::Fg(color::AnsiValue(state + 1)));
-        print_train(&[TRAIN_11, COAL01], width, x, 1);
-        print_train(&[TRAIN_12, COAL02], width, x, 2);
-        print_train(&[TRAIN_13, COAL03], width, x, 3);
-        print_train(&[TRAIN_14, COAL04], width, x, 4);
-        print_train(&[TRAIN_15, COAL05], width, x, 5);
-        print_train(&[TRAIN_16, COAL06], width, x, 6);
-        print_train(&[TRAIN_17, COAL07], width, x, 7);
-        print_train(&[WHEELS_11[state as usize], COAL08], width, x, 8);
-        print_train(&[WHEELS_12[state as usize], COAL09], width, x, 9);
-        print_train(&[WHEELS_13[state as usize], COAL10], width, x, 10);
-        state += 1;
-        state %= 6;
-        screen.flush().unwrap();
+const COAL10: &str = "                              ";
+const COAL11: &str = "                              ";
+const COAL12: &str = "    _________________         ";
+const COAL13: &str = "   _|                \\_____A ";
+const COAL14: &str = " =|                        |  ";
+const COAL15: &str = " -|                        |  ";
+const COAL16: &str = "__|________________________|_ ";
+const COAL17: &str = "|__________________________|_ ";
+const COAL18: &str = "   |_D__D__D_|  |_D__D__D_|   ";
+const COAL19: &str = "    \\_/   \\_/    \\_/   \\_/";
+
+const COAL_COLLECTION: [&str; 10] = [
+    COAL10, COAL11, COAL12, COAL13, COAL14, COAL15, COAL16, COAL17, COAL18, COAL19,
+];
+
+fn main() -> std::io::Result<()> {
+    let (width, height) = size().expect("Unable to get terminal size");
+    execute!(stdout(), Hide, DisableLineWrap).expect("Unable to hide cursor");
+    for x in (0..width).rev() {
+        execute!(stdout(), Clear(ClearType::All)).expect("Unable to clear screen");
+        for i in 0..7 {
+            execute!(stdout(), MoveTo(x, height - 10 + i)).expect("Unable to move cursor");
+            execute!(
+                stdout(),
+                Print(LOCO_COLLECTION[i as usize]),
+                Print(COAL_COLLECTION[i as usize]),
+            )
+            .expect("Unable to print");
+        }
+        for i in 0..3 {
+            execute!(stdout(), MoveTo(x, height - 3 + i)).expect("Unable to move cursor");
+            execute!(
+                stdout(),
+                Print(WHEEL_COLLECTION[i as usize][(x % 3) as usize]),
+                Print(COAL_COLLECTION[(i + 7) as usize]),
+            )
+            .expect("Unable to print");
+        }
         thread::sleep(time::Duration::from_millis(60));
-        println!("{}", clear::All);
     }
-}
-
-fn print_train(input: &[&str], t_width: u16, offset: u16, row: u16) {
-    let mut length = 0;
-    // TODO this is ugly as hell - must be a better way to slice a utf8 string
-    let out: String = input
-        .iter()
-        .map(|item| {
-            item.chars()
-                .map(|c| {
-                    length = length + 1;
-                    if length >= offset {
-                        return ' ';
-                    } else {
-                        c
-                    }
-                })
-                .collect::<String>()
-        })
-        .collect::<String>();
-
-    println!("{}{}", cursor::Goto(t_width - offset, row), out);
+    execute!(stdout(), Clear(ClearType::All)).expect("Unable to clear screen");
+    execute!(stdout(), Show, EnableLineWrap).expect("Unable to show cursor");
+    Ok(())
 }
