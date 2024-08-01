@@ -1,6 +1,6 @@
 use std::io::{stdout, Write};
 use std::{thread, time};
-use termion::{clear, color, cursor, screen, terminal_size};
+use termion::{clear, color, cursor, screen::IntoAlternateScreen, terminal_size};
 
 const TRAIN_11: &str = "      ====        ________                ___________ ";
 const TRAIN_12: &str = "  _D _|  |_______/        \\__I_I_____===__|_________| ";
@@ -48,7 +48,9 @@ fn main() {
     // TODO Add flags
     // -n number of carriages
     // -t type of locomotive
-    let mut screen = screen::AlternateScreen::from(stdout());
+    let mut screen = stdout()
+        .into_alternate_screen()
+        .expect("Failed to open alternate screen");
     let mut state = 0 as u8;
     let (width, _) = terminal_size().unwrap();
     for x in 0..=width as u16 {
