@@ -9,6 +9,7 @@ description = "A Rust implementation of the classic Unix 'sl' command."
 [dependencies]
 clap = { version = "4.0", features = ["derive"] }
 crossterm = "0.27"
+signal-hook = "0.3.17"
 
 # The profile that 'cargo dist' will build with
 [profile.dist]

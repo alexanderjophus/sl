@@ -1,3 +1,3 @@
 # sl is a Steam Locomotive
 
-It goes choo choo
+It goes choo choo.
