@@ -1,17 +1,18 @@
+mod colours;
+mod flags;
 mod train;
 
 use std::io::{stdout, Error};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::{thread, time};
 
 use clap::{arg, command, Parser};
-use crossterm::terminal::{DisableLineWrap, EnableLineWrap};
 use crossterm::{
     cursor::{Hide, MoveTo, Show},
     execute,
-    style::Print,
-    terminal::{size, Clear, ClearType},
+    style::{Color, Print, ResetColor, SetForegroundColor},
+    terminal::{size, Clear, ClearType, DisableLineWrap, EnableLineWrap},
 };
 
 use train::{COAL_COLLECTION, LOCO_COLLECTION, WHEEL_COLLECTION};
@@ -21,20 +22,11 @@ use train::{COAL_COLLECTION, LOCO_COLLECTION, WHEEL_COLLECTION};
 struct Args {
     /// Number of carriages to display
     #[arg(short, long, default_value_t = 1)]
-    count: u8,
+    count: usize,
+    /// Displays the trains as pride flags
+    #[arg(short, long, default_value = "pride")]
+    flag: String,
 }
-
-/*
-fn main() -> Result<(), Error> {
-    let term = Arc::new(AtomicBool::new(false));
-    signal_hook::flag::register(signal_hook::consts::SIGINT, Arc::clone(&term))?;
-    while !term.load(Ordering::Relaxed) {
-        println!("Hello, world!");
-    }
-    println!("Goodbye, world!");
-    Ok(())
-}
-*/
 
 fn main() -> Result<(), Error> {
     let term = Arc::new(AtomicBool::new(false));
@@ -43,39 +35,147 @@ fn main() -> Result<(), Error> {
     let args = Args::parse();
 
     let (width, height) = size().expect("Unable to get terminal size");
+    let (colours, _flag_length) = parse_flag(&args.flag);
+
     execute!(stdout(), Hide, DisableLineWrap).expect("Unable to hide cursor");
-    while !term.load(Ordering::Relaxed) {
-        train_animation(width, height, args.count).expect("Unable to animate train");
-    }
+
+    train_animation(width, height, args.count, colours).expect("Unable to animate train");
 
     execute!(stdout(), Clear(ClearType::All)).expect("Unable to clear screen");
     execute!(stdout(), Show, EnableLineWrap).expect("Unable to show cursor");
     Ok(())
 }
 
-fn train_animation(width: u16, height: u16, carriage_count: u8) -> Result<(), Error> {
-    for x in (0..width).rev() {
+fn train_animation(
+    width: u16,
+    height: u16,
+    carriage_count: usize,
+    colours: Vec<Color>,
+) -> Result<(), Error> {
+    let offset = (carriage_count + 1) * 30;
+    let mut loco_finished = false;
+    let mut carriages_started_to_finish = 0;
+    let mut carriages_finished = 0;
+    // for mut cursor_position_orig in (0..(width + offset as u16)).rev() {
+    for mut cursor_position_orig in (0..(width as u16)).rev() {
+        cursor_position_orig = cursor_position_orig - offset as u16;
+        if cursor_position_orig == u16::MAX {
+            loco_finished = true;
+        }
+        let cursor_position_default = match loco_finished {
+            true => 0,
+            false => cursor_position_orig as u16,
+        };
         execute!(stdout(), Clear(ClearType::All)).expect("Unable to clear screen");
-        for i in 0..7 {
-            execute!(stdout(), MoveTo(x, height - 10 + i)).expect("Unable to move cursor");
-            execute!(stdout(), Print(LOCO_COLLECTION[i as usize]),).expect("Unable to print");
-            for _ in 0..carriage_count {
-                execute!(stdout(), Print(COAL_COLLECTION[i as usize]),).expect("Unable to print");
+
+        execute!(
+            stdout(),
+            MoveTo(0, 0),
+            Print(format!(
+                "cursor_position_orig: {}, loco_finished: {}, carriages_finished: {}",
+                cursor_position_orig, loco_finished, carriages_finished,
+            )),
+        )
+        .expect("Unable to print");
+
+        for i in 0..10 {
+            match i < 7 {
+                true => {
+                    let loco_print = match loco_finished {
+                        true if u16::MAX - cursor_position_orig <= 54 => {
+                            LOCO_COLLECTION[i as usize]
+                                .split_at((u16::MAX - cursor_position_orig).into())
+                                .1
+                        }
+                        false => LOCO_COLLECTION[i as usize],
+                        _ => "",
+                    };
+
+                    execute!(stdout(), MoveTo(cursor_position_default, height - 10 + i))
+                        .expect("Unable to move cursor");
+                    execute!(stdout(), Print(loco_print)).expect("Unable to print");
+                }
+                false => {
+                    let wheel_print = match loco_finished {
+                        true if u16::MAX - cursor_position_orig <= 54 => {
+                            WHEEL_COLLECTION[i as usize - 7][(cursor_position_orig % 3) as usize]
+                                .split_at((u16::MAX - cursor_position_orig).into())
+                                .1
+                        }
+                        false => {
+                            WHEEL_COLLECTION[i as usize - 7][(cursor_position_orig % 3) as usize]
+                        }
+                        _ => "",
+                    };
+                    execute!(stdout(), MoveTo(cursor_position_default, height - 10 + i))
+                        .expect("Unable to move cursor");
+                    execute!(stdout(), Print(wheel_print)).expect("Unable to print");
+                }
             }
         }
-        for i in 0..3 {
-            execute!(stdout(), MoveTo(x, height - 3 + i)).expect("Unable to move cursor");
-            execute!(
-                stdout(),
-                Print(WHEEL_COLLECTION[i as usize][(x % 3) as usize]),
-            )
-            .expect("Unable to print");
-            for _ in 0..carriage_count {
-                execute!(stdout(), Print(COAL_COLLECTION[(i + 7) as usize]))
-                    .expect("Unable to print");
+
+        for carriage_index in 0..carriage_count {
+            let idx = cursor_position_orig + LOCO_LENGTH + ((carriage_index as u16) * COAL_LENGTH);
+            // bool, if current carriage is at the start (or beyond) of the screen set to 0
+            match idx == u16::MAX {
+                true => carriages_started_to_finish += 1,
+                false => {}
+            }
+            match idx + COAL_LENGTH == u16::MAX {
+                true => carriages_finished += 1,
+                false => {}
+            }
+            let carriage_cursor = match carriages_finished > carriage_index {
+                true => 0,
+                false if idx + COAL_LENGTH < idx => 0,
+                _ => idx,
+            };
+            if carriages_finished > carriage_index && idx + COAL_LENGTH == u16::MAX {
+                continue;
+            }
+
+            for i in 0..10 {
+                execute!(
+                    stdout(),
+                    MoveTo(carriage_cursor, height - 10 + i),
+                    SetForegroundColor(colours[carriage_index as usize]), // modulo flag_length
+                    Print(get_carriage_printable(
+                        COAL_COLLECTION[i as usize],
+                        carriage_index,
+                        cursor_position_orig,
+                        carriages_started_to_finish > carriage_index
+                    )),
+                    ResetColor,
+                )
+                .expect("Unable to print");
             }
         }
-        thread::sleep(time::Duration::from_millis(60));
+
+        thread::sleep(time::Duration::from_millis(100));
     }
     Ok(())
+}
+
+fn parse_flag(flag: &String) -> (Vec<Color>, usize) {
+    match flag.as_str() {
+        // default to pride flag
+        _ => (flags::PRIDE.to_vec(), flags::PRIDE.len()),
+    }
+}
+
+const LOCO_LENGTH: u16 = 54;
+const COAL_LENGTH: u16 = 30;
+
+fn get_carriage_printable(
+    orig_str: &str,
+    index: usize,
+    cursor_position_orig: u16,
+    reached_start: bool,
+) -> &str {
+    let thing = u16::MAX - (cursor_position_orig + LOCO_LENGTH + ((index as u16) * COAL_LENGTH));
+    match reached_start {
+        true if thing <= COAL_LENGTH => orig_str.split_at(thing.into()).1,
+        false => orig_str,
+        _ => "",
+    }
 }
