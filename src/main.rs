@@ -28,6 +28,9 @@ struct Args {
     flag: String,
 }
 
+const LOCO_LENGTH: u16 = 54;
+const COAL_LENGTH: u16 = 30;
+
 fn main() -> Result<(), Error> {
     let term = Arc::new(AtomicBool::new(false));
     signal_hook::flag::register(signal_hook::consts::SIGINT, Arc::clone(&term))?;
@@ -116,14 +119,11 @@ fn train_animation(
 
         for carriage_index in 0..carriage_count {
             let idx = cursor_position_orig + LOCO_LENGTH + ((carriage_index as u16) * COAL_LENGTH);
-            // bool, if current carriage is at the start (or beyond) of the screen set to 0
-            match idx == u16::MAX {
-                true => carriages_started_to_finish += 1,
-                false => {}
+            if idx == u16::MAX {
+                carriages_started_to_finish += 1
             }
-            match idx + COAL_LENGTH == u16::MAX {
-                true => carriages_finished += 1,
-                false => {}
+            if idx + COAL_LENGTH == u16::MAX {
+                carriages_finished += 1
             }
             let carriage_cursor = match carriages_finished > carriage_index {
                 true => 0,
@@ -162,9 +162,6 @@ fn parse_flag(flag: &String) -> (Vec<Color>, usize) {
         _ => (flags::PRIDE.to_vec(), flags::PRIDE.len()),
     }
 }
-
-const LOCO_LENGTH: u16 = 54;
-const COAL_LENGTH: u16 = 30;
 
 fn get_carriage_printable(
     orig_str: &str,
