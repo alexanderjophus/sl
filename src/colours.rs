@@ -32,3 +32,18 @@ pub const VIOLET: Color = Color::Rgb {
     g: 0,
     b: 142,
 };
+pub const PASTEL_BLUE: Color = Color::Rgb {
+    r: 91,
+    g: 206,
+    b: 250,
+};
+pub const PASTEL_PINK: Color = Color::Rgb {
+    r: 245,
+    g: 169,
+    b: 184,
+};
+pub const WHITE: Color = Color::Rgb {
+    r: 255,
+    g: 255,
+    b: 255,
+};

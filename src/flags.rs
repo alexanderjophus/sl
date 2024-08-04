@@ -12,3 +12,11 @@ pub const PRIDE: [Color; 8] = [
     colours::INDIGO,
     colours::VIOLET,
 ];
+
+pub const TRANS: [Color; 5] = [
+    colours::PASTEL_BLUE,
+    colours::PASTEL_PINK,
+    colours::WHITE,
+    colours::PASTEL_PINK,
+    colours::PASTEL_BLUE,
+];

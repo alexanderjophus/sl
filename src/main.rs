@@ -7,7 +7,7 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::{thread, time};
 
-use clap::{arg, command, Parser};
+use clap::{arg, command, Parser, ValueEnum};
 use crossterm::{
     cursor::{Hide, MoveTo, Show},
     execute,
@@ -24,8 +24,15 @@ struct Args {
     #[arg(short, long, default_value_t = 1)]
     count: usize,
     /// Displays the trains as pride flags
-    #[arg(short, long, default_value = "pride")]
-    flag: String,
+    #[arg(short, long, default_value = "auto")]
+    flag: FlagChoice,
+}
+
+#[derive(ValueEnum, Debug, Clone)]
+pub enum FlagChoice {
+    Auto,
+    Pride,
+    Trans,
 }
 
 const LOCO_LENGTH: u16 = 54;
@@ -59,8 +66,7 @@ fn train_animation(
     let mut loco_finished = false;
     let mut carriages_started_to_finish = 0;
     let mut carriages_finished = 0;
-    // for mut cursor_position_orig in (0..(width + offset as u16)).rev() {
-    for mut cursor_position_orig in (0..(width as u16)).rev() {
+    for mut cursor_position_orig in (0..(width + offset as u16)).rev() {
         cursor_position_orig = cursor_position_orig - offset as u16;
         if cursor_position_orig == u16::MAX {
             loco_finished = true;
@@ -71,49 +77,34 @@ fn train_animation(
         };
         execute!(stdout(), Clear(ClearType::All)).expect("Unable to clear screen");
 
-        execute!(
-            stdout(),
-            MoveTo(0, 0),
-            Print(format!(
-                "cursor_position_orig: {}, loco_finished: {}, carriages_finished: {}",
-                cursor_position_orig, loco_finished, carriages_finished,
-            )),
-        )
-        .expect("Unable to print");
-
         for i in 0..10 {
-            match i < 7 {
-                true => {
-                    let loco_print = match loco_finished {
-                        true if u16::MAX - cursor_position_orig <= 54 => {
-                            LOCO_COLLECTION[i as usize]
-                                .split_at((u16::MAX - cursor_position_orig).into())
-                                .1
-                        }
-                        false => LOCO_COLLECTION[i as usize],
-                        _ => "",
-                    };
+            if i < 7 {
+                let loco_print = match loco_finished {
+                    true if u16::MAX - cursor_position_orig <= 54 => {
+                        LOCO_COLLECTION[i as usize]
+                            .split_at((u16::MAX - cursor_position_orig).into())
+                            .1
+                    }
+                    false => LOCO_COLLECTION[i as usize],
+                    _ => "",
+                };
 
-                    execute!(stdout(), MoveTo(cursor_position_default, height - 10 + i))
-                        .expect("Unable to move cursor");
-                    execute!(stdout(), Print(loco_print)).expect("Unable to print");
-                }
-                false => {
-                    let wheel_print = match loco_finished {
-                        true if u16::MAX - cursor_position_orig <= 54 => {
-                            WHEEL_COLLECTION[i as usize - 7][(cursor_position_orig % 3) as usize]
-                                .split_at((u16::MAX - cursor_position_orig).into())
-                                .1
-                        }
-                        false => {
-                            WHEEL_COLLECTION[i as usize - 7][(cursor_position_orig % 3) as usize]
-                        }
-                        _ => "",
-                    };
-                    execute!(stdout(), MoveTo(cursor_position_default, height - 10 + i))
-                        .expect("Unable to move cursor");
-                    execute!(stdout(), Print(wheel_print)).expect("Unable to print");
-                }
+                execute!(stdout(), MoveTo(cursor_position_default, height - 10 + i))
+                    .expect("Unable to move cursor");
+                execute!(stdout(), Print(loco_print)).expect("Unable to print");
+            } else {
+                let wheel_print = match loco_finished {
+                    true if u16::MAX - cursor_position_orig <= 54 => {
+                        WHEEL_COLLECTION[i as usize - 7][(cursor_position_orig % 3) as usize]
+                            .split_at((u16::MAX - cursor_position_orig).into())
+                            .1
+                    }
+                    false => WHEEL_COLLECTION[i as usize - 7][(cursor_position_orig % 3) as usize],
+                    _ => "",
+                };
+                execute!(stdout(), MoveTo(cursor_position_default, height - 10 + i))
+                    .expect("Unable to move cursor");
+                execute!(stdout(), Print(wheel_print)).expect("Unable to print");
             }
         }
 
@@ -151,15 +142,16 @@ fn train_animation(
             }
         }
 
-        thread::sleep(time::Duration::from_millis(100));
+        thread::sleep(time::Duration::from_millis(60));
     }
     Ok(())
 }
 
-fn parse_flag(flag: &String) -> (Vec<Color>, usize) {
-    match flag.as_str() {
-        // default to pride flag
-        _ => (flags::PRIDE.to_vec(), flags::PRIDE.len()),
+fn parse_flag(flag: &FlagChoice) -> (Vec<Color>, usize) {
+    match flag {
+        FlagChoice::Pride => (flags::PRIDE.to_vec(), flags::PRIDE.len()),
+        FlagChoice::Trans => (flags::TRANS.to_vec(), flags::TRANS.len()),
+        FlagChoice::Auto => (flags::PRIDE.to_vec(), flags::PRIDE.len()),
     }
 }
 

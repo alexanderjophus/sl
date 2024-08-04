@@ -1,6 +1,6 @@
 [package]
 name = "sl"
-version = "0.0.6"
+version = "0.0.7"
 authors = ["Alexander Jophus <hello@alexanderjophus.dev>"]
 edition = "2021"
 repository = "https://github.com/alexanderjophus/sl"
